@@ -23,21 +23,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let raw_value = adc_pin.read_raw().unwrap_or(0);
         println!("Raw value: {}", raw_value);
 
-        // Convert raw ADC value to voltage
-        let voltage = (raw_value as f32) * (5.0 / 4095.0);
+        // Voltage calculation (for 3.3V reference)
+        let voltage = (raw_value as f32) * (3.3 / 4095.0);
         println!("Voltage: {:.2} V", voltage);
 
-        // Interpret soil moisture level (0% dry, 100% wet)
-        let moisture_percentage = ((4095 - raw_value) as f32 / 4095.0) * 100.0;
+        // Soil moisture calibration
+        let dry_value = 3500.0;  // Replace with your dry soil reading
+        let wet_value = 2800.0;   // Replace with your wet soil reading
+        let moisture_percentage = ((dry_value - raw_value as f32) / (dry_value - wet_value)) * 100.0;
+        let moisture_percentage = moisture_percentage.clamp(0.0, 100.0); // Keep within 0-100%
         println!("Soil Moisture: {:.2}%", moisture_percentage);
 
+        // Control LED based on moisture
         if moisture_percentage > 20.0 {
             pin_led.set_high().expect("Error: Unable to toggle pin");
-        }else{
+        } else {
             pin_led.set_low().expect("Error: Unable to toggle pin");
         }
-        // Delay for readability
-        
+
         thread::sleep(Duration::from_millis(1000));
     }
 }
